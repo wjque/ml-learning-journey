@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Markdown 渲染器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+        
+        h1 {
+            margin-bottom: 10px;
+            font-size: 2.2rem;
+        }
+        
+        .description {
+            max-width: 800px;
+            margin: 0 auto 20px;
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .input-section {
+            padding: 25px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eaecef;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+        
+        input:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        .content {
+            display: flex;
+            min-height: 500px;
+        }
+        
+        .file-list {
+            width: 300px;
+            padding: 20px;
+            border-right: 1px solid #eaecef;
+            background: #fafbfc;
+            overflow-y: auto;
+            max-height: 600px;
+        }
+        
+        .file-list h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #3498db;
+        }
+        
+        .file-item {
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+        }
+        
+        .file-item:hover {
+            background: #e3f2fd;
+        }
+        
+        .file-item i {
+            margin-right: 10px;
+            color: #6c757d;
+        }
+        
+        .file-item.active {
+            background: #d6eaf8;
+            font-weight: 600;
+        }
+        
+        .render-section {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+            max-height: 600px;
+        }
+        
+        .markdown-body {
+            font-size: 16px;
+            max-width: 100%;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+        
+        .loading i {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            color: #3498db;
+        }
+        
+        .error {
+            color: #e74c3c;
+            padding: 15px;
+            background: #fde8e6;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+        
+        .link-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e8f4fc;
+            border-radius: 6px;
+        }
+        
+        .link-section h4 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .link {
+            word-break: break-all;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #bdc3c7;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            border-top: 1px solid #eaecef;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+            
+            .file-list {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid #eaecef;
+                max-height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>GitHub Markdown 渲染器</h1>
+            <p class="description">输入GitHub仓库信息，获取指定文件夹中的Markdown文件并渲染数学公式</p>
+        </header>
+        
+        <div class="input-section">
+            <div class="form-group">
+                <label for="owner">仓库所有者</label>
+                <input type="text" id="owner" placeholder="例如：torvalds" value="wjque">
+            </div>
+            
+            <div class="form-group">
+                <label for="repo">仓库名称</label>
+                <input type="text" id="repo" placeholder="例如：linux" value="ml-learning-journey">
+            </div>
+            
+            <div class="form-group">
+                <label for="path">文件夹路径</label>
+                <input type="text" id="path" placeholder="例如：docs" value="diary">
+            </div>
+            
+            <button id="fetch-btn">
+                <i class="fas fa-download"></i> 获取文件列表
+            </button>
+        </div>
+        
+        <div class="content">
+            <div class="file-list">
+                <h3>Markdown 文件</h3>
+                <div id="file-container">
+                    <div class="loading" id="initial-message">
+                        <i class="fas fa-file-alt"></i>
+                        <p>输入信息后点击"获取文件列表"</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="render-section">
+                <div id="render-container">
+                    <div class="loading">
+                        <i class="fas fa-code"></i>
+                        <p>选择一个文件查看其内容</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2023 GitHub Markdown 渲染器 | 使用 Marked.js 和 MathJax 构建</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fetchBtn = document.getElementById('fetch-btn');
+            const ownerInput = document.getElementById('owner');
+            const repoInput = document.getElementById('repo');
+            const pathInput = document.getElementById('path');
+            const fileContainer = document.getElementById('file-container');
+            const renderContainer = document.getElementById('render-container');
+            
+            // 配置MathJax
+            window.MathJax = {
+                tex: {
+                    inlineMath: [['$', '$'], ['\\(', '\\)']],
+                    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                    processEscapes: true,
+                    processEnvironments: true
+                },
+                options: {
+                    skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+                }
+            };
+            
+            // 配置Marked
+            marked.setOptions({
+                breaks: true,
+                highlight: function(code, lang) {
+                    // 在实际应用中，这里可以添加代码高亮功能
+                    return code;
+                }
+            });
+            
+            // 获取文件列表
+            fetchBtn.addEventListener('click', function() {
+                const owner = ownerInput.value.trim();
+                const repo = repoInput.value.trim();
+                const path = pathInput.value.trim();
+                
+                if (!owner || !repo) {
+                    showError('请输入仓库所有者和仓库名称');
+                    return;
+                }
+                
+                fileContainer.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>加载文件中...</p></div>';
+                renderContainer.innerHTML = '<div class="loading"><i class="fas fa-code"></i><p>选择一个文件查看其内容</p></div>';
+                
+                const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+                
+                fetch(apiUrl)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('获取文件列表失败：' + response.statusText);
+                        }
+                        return response.json();
+                    })
+                    .then(files => {
+                        // 过滤出markdown文件
+                        const mdFiles = files.filter(file => {
+                            return file.name.endsWith('.md') || file.name.endsWith('.markdown');
+                        });
+                        
+                        if (mdFiles.length === 0) {
+                            fileContainer.innerHTML = '<div class="error">该文件夹中没有Markdown文件</div>';
+                            return;
+                        }
+                        
+                        displayFileList(mdFiles);
+                    })
+                    .catch(error => {
+                        showError('错误：' + error.message);
+                    });
+            });
+            
+            // 显示文件列表
+            function displayFileList(files) {
+                let html = '<h3>Markdown 文件</h3>';
+                
+                files.forEach((file, index) => {
+                    html += `
+                        <div class="file-item" data-url="${file.download_url}" data-name="${file.name}">
+                            <i class="fas fa-file-alt"></i> ${file.name}
+                        </div>
+                    `;
+                });
+                
+                fileContainer.innerHTML = html;
+                
+                // 添加点击事件
+                document.querySelectorAll('.file-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                        // 移除之前的active状态
+                        document.querySelectorAll('.file-item').forEach(i => {
+                            i.classList.remove('active');
+                        });
+                        
+                        // 设置当前active状态
+                        this.classList.add('active');
+                        
+                        // 获取文件内容
+                        const fileUrl = this.getAttribute('data-url');
+                        const fileName = this.getAttribute('data-name');
+                        
+                        renderContainer.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><p>加载内容中...</p></div>';
+                        
+                        fetch(fileUrl)
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('获取文件内容失败：' + response.statusText);
+                                }
+                                return response.text();
+                            })
+                            .then(content => {
+                                renderMarkdown(content, fileName);
+                            })
+                            .catch(error => {
+                                showError('错误：' + error.message);
+                            });
+                    });
+                });
+            }
+            
+            // 渲染Markdown内容
+            function renderMarkdown(content, fileName) {
+                // 使用Marked.js渲染
+                const html = marked.parse(content);
+                
+                // 显示渲染结果
+                renderContainer.innerHTML = `
+                    <div class="markdown-body">${html}</div>
+                    <div class="link-section">
+                        <h4>访问链接</h4>
+                        <div class="link">https://github.com/${ownerInput.value}/${repoInput.value}/blob/master/${pathInput.value}/${fileName}</div>
+                    </div>
+                `;
+                
+                // 使用MathJax渲染数学公式
+                MathJax.typesetPromise && MathJax.typesetPromise();
+            }
+            
+            // 显示错误信息
+            function showError(message) {
+                fileContainer.innerHTML = `<div class="error">${message}</div>`;
+            }
+            
+            // 初始加载示例
+            setTimeout(() => {
+                fetchBtn.click();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
